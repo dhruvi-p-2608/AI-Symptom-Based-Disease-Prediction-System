@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Disease Prediction System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:       #F6F7FB;
+    --surface:  #FFFFFF;
+    --border:   #E2E6EE;
+    --border-md:#C8CDD8;
+    --text:     #141921;
+    --muted:    #6B7280;
+    --hint:     #9CA3AF;
+    --blue:     #185FA5;
+    --blue-lt:  #E6F1FB;
+    --blue-bd:  #B5D4F4;
+    --blue-dk:  #0C447C;
+    --amber-lt: #FAEEDA;
+    --amber-bd: #FAC775;
+    --amber-txt:#633806;
+    --r:        10px;
+    --rl:       14px;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem 5rem;
+  }
+  .page { width: 100%; max-width: 580px; }
+
+  /* Header */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-lt); color: var(--blue-dk);
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 26px; font-weight: 700; line-height: 1.2; margin-bottom: 6px;
+  }
+  .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; }
+
+  /* Warning banner */
+  .warn-bar {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--amber-lt); border: 0.5px solid var(--amber-bd);
+    border-radius: var(--r); padding: 12px 14px; margin-bottom: 1.5rem;
+  }
+  .warn-bar svg { flex-shrink: 0; margin-top: 1px; }
+  .warn-bar p { font-size: 12.5px; color: var(--amber-txt); line-height: 1.55; }
+  .warn-bar strong { font-weight: 500; }
+
+  /* API config row */
+  .api-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .api-row input {
+    flex: 1; padding: 8px 11px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    border: 0.5px solid var(--border-md); border-radius: var(--r);
+    background: var(--surface); color: var(--text); outline: none;
+  }
+  .api-row input:focus { border-color: var(--blue); }
+  .api-row button {
+    padding: 8px 14px; font-size: 12px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--blue-lt); color: var(--blue-dk);
+    border: 0.5px solid var(--blue-bd); border-radius: var(--r);
+    cursor: pointer; white-space: nowrap;
+  }
+  .api-row button:hover { background: var(--blue-bd); }
+
+  /* Connection pill */
+  .conn-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--muted); margin-bottom: 1.25rem;
+  }
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-md); }
+  .conn-dot.ok  { background: #22C55E; }
+  .conn-dot.err { background: #EF4444; }
+
+  /* Card */
+  .card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--rl); padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .sec-label {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); margin-bottom: 1rem;
+  }
+
+  /* Symptom row */
+  .sym-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sym-num {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; color: var(--muted); flex-shrink: 0;
+  }
+  .sym-wrap { flex: 1; position: relative; }
+  .sym-inp {
+    width: 100%; padding: 9px 12px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    border: 0.5px solid var(--border-md); border-radius: var(--r);
+    background: var(--surface); color: var(--text); outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .sym-inp:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,.1); }
+  .sym-inp::placeholder { color: var(--hint); }
+
+  /* Autocomplete */
+  .ac { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 0.5px solid var(--border-md);
+    border-radius: var(--r); z-index: 300; max-height: 180px;
+    overflow-y: auto; box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+  .ac.open { display: block; }
+  .ac-item {
+    padding: 8px 12px; font-size: 13px; cursor: pointer;
+    color: var(--text); border-bottom: 0.5px solid var(--border);
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover, .ac-item.hi { background: var(--bg); }
+  .ac-item mark { background: var(--blue-bd); color: var(--blue-dk); border-radius: 2px; font-style: normal; }
+
+  /* Remove btn */
+  .rm-btn {
+    width: 28px; height: 28px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 0.5px solid var(--border); border-radius: var(--r);
+    background: transparent; cursor: pointer; color: var(--muted);
+    font-size: 16px; line-height: 1; transition: all .15s;
+  }
+  .rm-btn:hover { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+  .rm-btn.inv { visibility: hidden; pointer-events: none; }
+
+  /* Add btn */
+  .add-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--blue); background: transparent;
+    border: none; cursor: pointer; padding: 4px 0; margin-top: 4px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .add-btn:hover { opacity: .7; }
+  .add-btn:disabled { opacity: .35; cursor: default; }
+
+  /* Predict btn */
+  .pred-btn {
+    width: 100%; padding: 13px;
+    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600;
+    color: #fff; background: var(--blue); border: none;
+    border-radius: var(--rl); cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .pred-btn:hover:not(:disabled) { background: var(--blue-dk); }
+  .pred-btn:active:not(:disabled) { transform: scale(.99); }
+  .pred-btn:disabled { background: var(--border); color: var(--hint); cursor: default; }
+
+  /* Loading */
+  .loading {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--muted); font-size: 14px; padding: 1.5rem 0;
+  }
+  .spin {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border); border-top-color: var(--blue);
+    border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .err-box {
+    background: #FEF2F2; border: 0.5px solid #FECACA;
+    border-radius: var(--r); padding: 12px 14px;
+    font-size: 13px; color: #991B1B;
+    margin-bottom: 1rem; display: none;
+  }
+  .err-box.show { display: block; }
+
+  /* ── Result ────────────────────────────────────────────────────── */
+  .res-card { border-radius: var(--rl); overflow: hidden; margin-bottom: 1rem; }
+
+  .res-head {
+    background: var(--blue-lt);
+    border: 0.5px solid var(--blue-bd); border-bottom: none;
+    padding: 1rem 1.25rem;
+  }
+  .res-head-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .res-icon {
+    width: 38px; height: 38px; border-radius: 10px; background: var(--blue);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .res-badge {
+    font-size: 10px; font-weight: 500; color: var(--blue-dk);
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 3px;
+  }
+  .res-disease {
+    font-family: 'Sora', sans-serif; font-size: 21px;
+    font-weight: 700; color: #042C53; line-height: 1.1;
+  }
+  .res-model-pill {
+    display: inline-block; margin-top: 3px;
+    background: var(--blue-bd); color: var(--blue-dk);
+    font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  .conf-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 500; color: var(--blue-dk); margin-bottom: 5px; }
+  .conf-track { height: 6px; background: var(--blue-bd); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; background: var(--blue); border-radius: 3px; width: 0; transition: width .9s cubic-bezier(.4,0,.2,1); }
+
+  .res-body {
+    background: var(--surface);
+    border: 0.5px solid var(--border); border-top: none;
+    border-radius: 0 0 var(--rl) var(--rl);
+  }
+  .res-sec { padding: 1rem 1.25rem; border-bottom: 0.5px solid var(--border); }
+  .res-sec:last-child { border-bottom: none; }
+  .res-sec-ttl {
+    font-size: 10.5px; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px;
+  }
+  .desc-txt { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .tag {
+    display: inline-block; background: var(--bg);
+    border: 0.5px solid var(--border); border-radius: 20px;
+    padding: 4px 10px; font-size: 12px; color: var(--muted);
+    margin: 3px 3px 3px 0;
+  }
+  .blt { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; font-size: 13px; color: var(--text); line-height: 1.55; }
+  .blt-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 7px; }
+
+  .oth-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .oth-name { font-size: 13px; color: var(--text); min-width: 140px; }
+  .oth-track { flex: 1; height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+  .oth-fill { height: 100%; background: var(--border-md); border-radius: 2px; width: 0; transition: width .9s cubic-bezier(.4,0,.2,1); }
+  .oth-pct { font-size: 11px; color: var(--muted); min-width: 30px; text-align: right; }
+
+  .inner-warn {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: var(--amber-lt); border-radius: 8px; padding: 10px 12px;
+  }
+  .inner-warn p { font-size: 12px; color: var(--amber-txt); line-height: 1.55; }
+
+  /* Reset */
+  .reset-btn {
+    width: 100%; padding: 10px; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; color: var(--muted);
+    background: transparent; border: 0.5px solid var(--border-md);
+    border-radius: var(--rl); cursor: pointer; transition: all .15s;
+  }
+  .reset-btn:hover { background: var(--surface); color: var(--text); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div style="padding: 1rem 0 1.2rem;">
+    <div class="badge"><div class="badge-dot"></div>AI-powered</div>
+    <h1>Disease Prediction System</h1>
+    <p class="subtitle">Enter 3–5 symptoms to receive an AI-based health assessment</p>
+  </div>
+
+  <!-- Top disclaimer -->
+  <div class="warn-bar">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1.5A6.5 6.5 0 1 0 8 14.5 6.5 6.5 0 0 0 8 1.5zM8 11a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm.75-3.5a.75.75 0 0 1-1.5 0V5.5a.75.75 0 0 1 1.5 0V7.5z" fill="#BA7517"/>
+    </svg>
+    <p><strong>Not a substitute for medical advice.</strong> For educational purposes only. Predictions may not be 100% accurate. Always consult a qualified healthcare professional.</p>
+  </div>
+
+  <!-- API URL config -->
+  <div class="api-row">
+    <input type="text" id="api-url" placeholder="Backend URL — e.g. http://localhost:8000" value="http://localhost:8000" />
+    <button onclick="testConn()">Test connection</button>
+  </div>
+  <div class="conn-pill">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span id="conn-txt">Not connected — click "Test connection"</span>
+  </div>
+
+  <!-- Error box -->
+  <div class="err-box" id="err-box"></div>
+
+  <!-- Input section -->
+  <div id="inp-sec">
+    <div class="card">
+      <div class="sec-label">Enter your symptoms</div>
+      <div id="sym-rows"></div>
+      <button class="add-btn" id="add-btn" onclick="addSym()">
+        <svg width="13" height="13" viewBox="0 0 13 13"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add another symptom
+      </button>
+    </div>
+    <button class="pred-btn" id="pred-btn" disabled onclick="predict()">Predict Disease</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="load-sec" class="hidden">
+    <div class="loading"><div class="spin"></div>Analysing your symptoms…</div>
+  </div>
+
+  <!-- Result -->
+  <div id="res-sec" class="hidden"></div>
+
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+let API = "http://localhost:8000";
+let symptoms = ["", "", ""];
+let knownSyms = [];
+let acIdx = {};
+
+// ── API URL sync ──────────────────────────────────────────────────────────
+document.getElementById("api-url").addEventListener("input", function() {
+  API = this.value.trim().replace(/\/$/, "");
+});
+
+// ── Test connection ───────────────────────────────────────────────────────
+async function testConn() {
+  API = document.getElementById("api-url").value.trim().replace(/\/$/, "");
+  const dot = document.getElementById("conn-dot");
+  const txt = document.getElementById("conn-txt");
+  dot.className = "conn-dot"; txt.textContent = "Connecting…";
+  try {
+    const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    dot.className = "conn-dot ok";
+    txt.textContent = `Connected ✓  —  model ${d.model_loaded ? "loaded" : "not found (fallback active)"},  ${d.symptoms} symptoms`;
+    await loadSymptoms();
+  } catch {
+    dot.className = "conn-dot err";
+    txt.textContent = "Cannot reach backend. Make sure uvicorn is running on the URL above.";
+  }
+}
+
+async function loadSymptoms() {
+  try {
+    const r = await fetch(`${API}/symptoms`);
+    if (!r.ok) return;
+    const d = await r.json();
+    knownSyms = d.symptoms || [];
+    renderRows(); // re-render so autocomplete uses server list
+  } catch {}
+}
+
+// ── Render symptom rows ───────────────────────────────────────────────────
+function h(s) {
+  return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderRows() {
+  const c = document.getElementById("sym-rows");
+  c.innerHTML = "";
+  symptoms.forEach((val, i) => {
+    const row = document.createElement("div");
+    row.className = "sym-row";
+    row.innerHTML = `
+      <div class="sym-num">${i+1}</div>
+      <div class="sym-wrap" id="w${i}">
+        <input class="sym-inp" id="inp${i}" type="text" autocomplete="off"
+               placeholder="e.g. fever, headache, cough…" value="${h(val)}">
+        <div class="ac" id="ac${i}"></div>
+      </div>
+      <button class="rm-btn${symptoms.length<=3?" inv":""}" onclick="remSym(${i})">×</button>`;
+    c.appendChild(row);
+
+    const inp = document.getElementById(`inp${i}`);
+    inp.addEventListener("input",  () => onInput(i, inp.value));
+    inp.addEventListener("keydown", e => onKey(e, i));
+    inp.addEventListener("focus",   () => onInput(i, inp.value));
+    inp.addEventListener("blur",    () => setTimeout(() => closeAC(i), 160));
+  });
+  document.getElementById("add-btn").disabled = symptoms.length >= 5;
+  updateBtn();
+}
+
+// ── Autocomplete ──────────────────────────────────────────────────────────
+function onInput(i, val) {
+  symptoms[i] = val;
+  updateBtn();
+  const ac = document.getElementById(`ac${i}`);
+  const pool = knownSyms.length ? knownSyms : LOCAL_SYMS;
+  const q = val.toLowerCase().trim();
+  if (!q) { ac.classList.remove("open"); return; }
+  const esc = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hits = pool.filter(s => s.toLowerCase().includes(q) && s.toLowerCase() !== q).slice(0, 7);
+  if (!hits.length) { ac.classList.remove("open"); return; }
+  ac.innerHTML = hits.map((s, j) =>
+    `<div class="ac-item" data-j="${j}" data-v="${h(s)}">${s.replace(new RegExp(`(${esc})`,"gi"),"<mark>$1</mark>")}</div>`
+  ).join("");
+  ac.querySelectorAll(".ac-item").forEach(el =>
+    el.addEventListener("mousedown", e => { e.preventDefault(); pickAC(i, el.dataset.v); })
+  );
+  ac.classList.add("open");
+  acIdx[i] = -1;
+}
+
+function onKey(e, i) {
+  const ac = document.getElementById(`ac${i}`);
+  const items = ac.querySelectorAll(".ac-item");
+  if (!items.length || !ac.classList.contains("open")) return;
+  if (acIdx[i] === undefined) acIdx[i] = -1;
+  if      (e.key === "ArrowDown")  { e.preventDefault(); acIdx[i] = Math.min(acIdx[i]+1, items.length-1); }
+  else if (e.key === "ArrowUp")    { e.preventDefault(); acIdx[i] = Math.max(acIdx[i]-1, 0); }
+  else if (e.key === "Enter" && acIdx[i] >= 0) { e.preventDefault(); pickAC(i, items[acIdx[i]].dataset.v); return; }
+  else if (e.key === "Escape")     { ac.classList.remove("open"); return; }
+  else return;
+  items.forEach((el, j) => el.classList.toggle("hi", j === acIdx[i]));
+}
+
+function pickAC(i, val) {
+  symptoms[i] = val;
+  document.getElementById(`inp${i}`).value = val;
+  closeAC(i);
+  updateBtn();
+}
+function closeAC(i) { document.getElementById(`ac${i}`)?.classList.remove("open"); }
+
+function addSym() { if (symptoms.length < 5) { symptoms.push(""); renderRows(); } }
+function remSym(i) { if (symptoms.length > 3) { symptoms.splice(i,1); renderRows(); } }
+function updateBtn() {
+  document.getElementById("pred-btn").disabled = symptoms.filter(s=>s.trim()).length < 3;
+}
+
+// ── Predict (calls real API) ───────────────────────────────────────────────
+async function predict() {
+  const filled = symptoms.map(s=>s.trim()).filter(Boolean);
+  if (filled.length < 3) return;
+
+  setErr("");
+  document.getElementById("inp-sec").classList.add("hidden");
+  document.getElementById("load-sec").classList.remove("hidden");
+
+  try {
+    const res = await fetch(`${API}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symptoms: filled }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+    showResult(data);
+  } catch (err) {
+    document.getElementById("load-sec").classList.add("hidden");
+    document.getElementById("inp-sec").classList.remove("hidden");
+    setErr(`❌ ${err.message}. Is the backend running at ${API}?`);
+  }
+}
+
+function setErr(msg) {
+  const el = document.getElementById("err-box");
+  el.textContent = msg;
+  el.classList.toggle("show", !!msg);
+}
+
+// ── Render result ─────────────────────────────────────────────────────────
+function showResult(d) {
+  document.getElementById("load-sec").classList.add("hidden");
+  const sec = document.getElementById("res-sec");
+  sec.classList.remove("hidden");
+
+  const modelLabel = d.model_used === "trained_ml_model" ? "ML model" : "Rule-based";
+
+  const othersHtml = (d.other_predictions||[]).map(o=>`
+    <div class="oth-row">
+      <span class="oth-name">${o.disease}</span>
+      <div class="oth-track"><div class="oth-fill" data-w="${o.confidence}%"></div></div>
+      <span class="oth-pct">${o.confidence}%</span>
+    </div>`).join("");
+
+  const precHtml = (d.precautions||[]).map(p=>
+    `<div class="blt"><div class="blt-dot"></div><span>${p}</span></div>`).join("");
+
+  const symTags = (d.matched_symptoms||[]).map(s=>
+    `<span class="tag">${s}</span>`).join("");
+
+  sec.innerHTML = `
+    <div class="res-card">
+      <div class="res-head">
+        <div class="res-head-top">
+          <div class="res-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C7.24 2 5 4.24 5 7c0 1.84.99 3.44 2.47 4.31L7 14h6l-.47-2.69A5.002 5.002 0 0 0 15 7c0-2.76-2.24-5-5-5z" fill="white" opacity=".9"/>
+              <rect x="7.5" y="14" width="5" height="1.2" rx=".6" fill="white" opacity=".8"/>
+              <rect x="8" y="15.8" width="4" height="1.2" rx=".6" fill="white" opacity=".65"/>
+            </svg>
+          </div>
+          <div>
+            <div class="res-badge">Top prediction</div>
+            <div class="res-disease">${d.disease}</div>
+            <div class="res-model-pill">${modelLabel}</div>
+          </div>
+        </div>
+        <div class="conf-row"><span>Confidence score</span><span>${d.confidence}%</span></div>
+        <div class="conf-track"><div class="conf-fill" id="cf"></div></div>
+      </div>
+      <div class="res-body">
+        ${d.description?`<div class="res-sec">
+          <div class="res-sec-ttl">About this condition</div>
+          <p class="desc-txt">${d.description}</p>
+        </div>`:""}
+        <div class="res-sec">
+          <div class="res-sec-ttl">Matched symptoms</div>
+          ${symTags}
+        </div>
+        ${precHtml?`<div class="res-sec">
+          <div class="res-sec-ttl">Recommended precautions</div>
+          ${precHtml}
+        </div>`:""}
+        ${othersHtml?`<div class="res-sec">
+          <div class="res-sec-ttl">Other possibilities</div>
+          ${othersHtml}
+        </div>`:""}
+        <div class="res-sec">
+          <div class="inner-warn">
+            <svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;margin-top:2px;">
+              <path d="M7 1a6 6 0 1 0 0 12A6 6 0 0 0 7 1zm0 9a.6.6 0 1 1 0-1.2A.6.6 0 0 1 7 10zm.6-3H6.4V4.5h1.2V7z" fill="#BA7517"/>
+            </svg>
+            <p>This prediction is <strong>not medically verified</strong>. Confidence scores are estimates only. Please visit a certified doctor or diagnostic centre for proper diagnosis and treatment.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="reset()">← Check different symptoms</button>`;
+
+  requestAnimationFrame(() => {
+    document.getElementById("cf").style.width = d.confidence + "%";
+    document.querySelectorAll(".oth-fill").forEach(el => { el.style.width = el.dataset.w; });
+  });
+}
+
+function reset() {
+  symptoms = ["","",""];
+  document.getElementById("res-sec").classList.add("hidden");
+  document.getElementById("res-sec").innerHTML = "";
+  document.getElementById("inp-sec").classList.remove("hidden");
+  setErr("");
+  renderRows();
+}
+
+// ── Local symptom fallback (before /symptoms loads) ────────────────────────
+const LOCAL_SYMS = [
+  "fever","cough","headache","fatigue","nausea","vomiting","diarrhoea","sore throat",
+  "runny nose","shortness of breath","chest pain","body ache","joint pain","rash",
+  "dizziness","abdominal pain","loss of appetite","sweating","chills","back pain",
+  "muscle weakness","blurred vision","swollen lymph nodes","skin itching","dry mouth",
+  "excessive thirst","frequent urination","weight loss","weight gain","constipation",
+  "pale skin","yellow skin","dark urine","blood in urine","bloating","heartburn",
+  "palpitations","anxiety","insomnia","confusion","numbness","tingling","ear pain",
+  "eye redness","nasal congestion","neck stiffness","leg cramps","cold hands",
+  "high fever","mild fever","dehydration","indigestion","muscle pain","skin rash",
+  "shivering","stomach pain","acidity","pain behind eyes","breathlessness","itching",
+];
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderRows();
+</script>
+</body>
+</html>
